@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Consulta - Números da Sorte (Sicoob)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{--sicoob-green:#00904A;--sicoob-green-dark:#005C35;--sicoob-yellow:#FFD200;}
+    .brand-gradient{background:linear-gradient(90deg,var(--sicoob-green),var(--sicoob-green-dark));}
+    .glass{background:rgba(255,255,255,0.06);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.06);}
+    .pill{min-width:60px;min-height:48px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.25);}
+    .small-muted{font-size:0.85rem;opacity:0.75;}
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 text-white antialiased">
+  <main class="max-w-5xl mx-auto p-6">
+    <header class="brand-gradient rounded-2xl p-6 mb-6 text-white shadow-2xl">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-lg bg-white/10 flex items-center justify-center text-2xl font-bold">S</div>
+        <div>
+          <h1 class="text-2xl font-semibold">Consulta de Números da Sorte</h1>
+          <p class="text-sm opacity-80">Digite o CPF do cooperado para ver o nome e número(s) da sorte atribuídos.</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="glass rounded-2xl p-6">
+        <label class="block text-sm mb-2">CPF do Cooperado</label>
+        <div class="flex gap-3">
+          <input id="cpfInput" placeholder="000.000.000-00" maxlength="14" class="w-full rounded-xl p-3 bg-white/5 focus:outline-none focus:ring-2 focus:ring-[var(--sicoob-green)] transition" />
+          <button id="checkBtn" class="px-4 rounded-xl py-3 bg-[var(--sicoob-green)] hover:bg-[var(--sicoob-green-dark)] transition font-semibold">Consultar</button>
+        </div>
+        <p class="text-xs mt-3 small-muted">Dados embutidos no código — atualize o array <strong>DATA</strong> dentro do script para alterar os registros.</p>
+        <div id="message" class="mt-4 text-sm text-yellow-200"></div>
+      </div>
+      <div class="glass rounded-2xl p-6 flex flex-col">
+        <div class="text-center">
+          <p class="text-sm opacity-70">CPF consultado</p>
+          <h2 id="cpfShow" class="text-lg font-semibold mt-1">—</h2>
+        </div>
+        <div id="results" class="mt-6 w-full space-y-4"></div>
+      </div>
+    </section>
+
+    <footer class="text-xs text-center opacity-70 mt-6">Sistema Sicoob — versão demonstração com dados embutidos.</footer>
+  </main>
+
+  <script>
+    const DATA = [
+      { cpf: '07918785622', name: 'ILDIBERTO FELIPE', numeros: ['123345','123458','145789','014786'] },
+      { cpf: '07918785623', name: 'LUCAS PELINSARI', numeros: ['123345','123458','145789','014786'] },
+      { cpf: '07918785624', name: 'MARCUS VINICIUS', numeros: ['123345','123458','145789','014786'] },
+      { cpf: '07918785625', name: 'ISABELA', numeros: ['123345','123458','145789','014786'] },
+      { cpf: '07918785626', name: 'REGINALDO', numeros: ['123345','123458','145789','014786'] }
+    ];
+
+    const LOOKUP = new Map();
+    for (const rec of DATA) {
+      const key = rec.cpf.replace(/\D/g,'').padStart(11,'0');
+      if (!LOOKUP.has(key)) LOOKUP.set(key, []);
+      LOOKUP.get(key).push({ name: rec.name, numeros: rec.numeros });
+    }
+
+    const cpfInput = document.getElementById('cpfInput');
+    const checkBtn = document.getElementById('checkBtn');
+    const message = document.getElementById('message');
+    const cpfShow = document.getElementById('cpfShow');
+    const results = document.getElementById('results');
+
+    cpfInput.addEventListener('input', e => {
+      let v = e.target.value.replace(/\D/g,'');
+      if (v.length > 11) v = v.slice(0,11);
+      v = v.replace(/(\d{3})(\d)/,'$1.$2');
+      v = v.replace(/(\d{3})(\d)/,'$1.$2');
+      v = v.replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+      e.target.value = v;
+    });
+
+    function cleanCPF(s){return s.replace(/\D/g,'').padStart(11,'0');}
+
+    checkBtn.addEventListener('click', () => {
+      const rawCpf = cpfInput.value.trim();
+      const cleaned = cleanCPF(rawCpf);
+      cpfShow.textContent = rawCpf || '—';
+      results.innerHTML = '';
+      message.textContent = '';
+      if (!LOOKUP.has(cleaned)) {
+        message.textContent = 'CPF não encontrado.';
+        return;
+      }
+      const entries = LOOKUP.get(cleaned);
+      for (const ent of entries) {
+        const card = document.createElement('div');
+        card.className = 'p-4 rounded-xl bg-white/5 border border-white/10';
+        const nameEl = document.createElement('div');
+        nameEl.className = 'text-lg font-semibold mb-2 text-[var(--sicoob-yellow)]';
+        nameEl.textContent = ent.name;
+        const numsEl = document.createElement('div');
+        numsEl.className = 'flex flex-wrap gap-2';
+        for (const n of ent.numeros) {
+          const span = document.createElement('div');
+          span.className = 'pill bg-[var(--sicoob-green)] text-white';
+          span.textContent = n;
+          numsEl.appendChild(span);
+        }
+        card.appendChild(nameEl);
+        card.appendChild(numsEl);
+        results.appendChild(card);
+      }
+    });
+  </script>
+</body>
+</html>
